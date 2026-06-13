@@ -40,7 +40,7 @@ export default function AccountPage() {
 
   if (status === "unauthenticated") return null;
 
-  const plan = ((session?.user as { plan?: string })?.plan ?? "basic") as Plan;
+  const plan = ((session?.user as { plan?: string })?.plan ?? "elite") as Plan;
   const planDef = getPlan(plan);
 
   const handleUpgrade = async (targetPlan: Plan) => {

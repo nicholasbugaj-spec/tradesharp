@@ -15,7 +15,7 @@ export default function DashboardPage() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [uploadsUsed, setUploadsUsed] = useState(0);
 
-  const plan = ((session?.user as { plan?: string })?.plan ?? "basic") as Plan;
+  const plan = ((session?.user as { plan?: string })?.plan ?? "elite") as Plan;
   const planDef = getPlan(plan);
 
   useEffect(() => {

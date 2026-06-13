@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
         email: email.toLowerCase(),
         password: hashedPassword,
         name: name ?? null,
-        plan: "basic",
+        plan: "elite",
       },
     });
 
