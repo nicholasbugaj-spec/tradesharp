@@ -8,23 +8,25 @@ datasource db {
 }
 
 model User {
-  id                     String     @id @default(cuid())
-  email                  String     @unique
-  password               String
-  name                   String?
-  plan                   String     @default("free")
-  stripeCustomerId       String?
-  stripeSubscriptionId   String?
-  stripeSubscriptionStatus String?  // active | canceled | past_due | trialing
-  createdAt              DateTime   @default(now())
-  analyses               Analysis[]
+  id                       String     @id @default(cuid())
+  email                    String     @unique
+  password                 String
+  name                     String?
+  plan                     String     @default("free")
+  bonusCredits             Int        @default(0)  // purchased analysis packs
+  stripeCustomerId         String?
+  stripeSubscriptionId     String?
+  stripeSubscriptionStatus String?
+  createdAt                DateTime   @default(now())
+  analyses                 Analysis[]
+  packPurchases            PackPurchase[]
 }
 
 model DiscountCode {
   id          String   @id @default(cuid())
   code        String   @unique
-  plan        String   // "basic" | "elite"
-  usesLeft    Int?     // null = unlimited
+  plan        String
+  usesLeft    Int?
   usesTotal   Int      @default(0)
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -32,11 +34,22 @@ model DiscountCode {
 }
 
 model CodeRedemption {
-  id        String       @id @default(cuid())
-  userId    String
-  codeId    String
-  code      DiscountCode @relation(fields: [codeId], references: [id])
-  redeemedAt DateTime    @default(now())
+  id         String       @id @default(cuid())
+  userId     String
+  codeId     String
+  code       DiscountCode @relation(fields: [codeId], references: [id])
+  redeemedAt DateTime     @default(now())
+}
+
+model PackPurchase {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  packId      String   // "pack_10" | "pack_30" | "pack_100"
+  credits     Int
+  amountPaid  Int      // in cents
+  stripeSessionId String?
+  createdAt   DateTime @default(now())
 }
 
 model Analysis {
@@ -49,5 +62,6 @@ model Analysis {
   reasoning      String
   marketType     String
   signals        String
+  usedCredit     Boolean  @default(false)  // true if came from a purchased pack
   createdAt      DateTime @default(now())
 }

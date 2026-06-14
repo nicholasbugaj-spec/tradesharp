@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getStripe, STRIPE_PRICE_IDS } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
+import { ANALYSIS_PACKS } from "@/lib/plans";
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,18 +13,11 @@ export async function POST(req: NextRequest) {
     }
 
     const userId = (session.user as { id?: string }).id!;
-    const { plan } = await req.json();
+    const { packId } = await req.json();
 
-    if (!["basic", "pro"].includes(plan)) {
-      return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
-    }
-
-    const priceId = STRIPE_PRICE_IDS[plan];
-    if (!priceId) {
-      return NextResponse.json(
-        { error: "Stripe price not configured. Add STRIPE_PRICE_BASIC and STRIPE_PRICE_ELITE to your .env file." },
-        { status: 500 }
-      );
+    const pack = ANALYSIS_PACKS.find((p) => p.id === packId);
+    if (!pack) {
+      return NextResponse.json({ error: "Invalid pack" }, { status: 400 });
     }
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -40,30 +34,37 @@ export async function POST(req: NextRequest) {
         metadata: { userId },
       });
       customerId = customer.id;
-      await prisma.user.update({
-        where: { id: userId },
-        data: { stripeCustomerId: customerId },
-      });
+      await prisma.user.update({ where: { id: userId }, data: { stripeCustomerId: customerId } });
     }
 
     const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
 
+    // Use price_data for one-time pack purchases (no need to pre-create in Stripe dashboard)
     const checkoutSession = await getStripe().checkout.sessions.create({
       customer: customerId,
-      mode: "subscription",
+      mode: "payment",
       payment_method_types: ["card"],
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${baseUrl}/dashboard?upgraded=true`,
-      cancel_url: `${baseUrl}/pricing?canceled=true`,
-      metadata: { userId, plan },
-      subscription_data: {
-        metadata: { userId, plan },
-      },
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            unit_amount: Math.round(pack.price * 100),
+            product_data: {
+              name: `${pack.name} — ${pack.credits} Analyses`,
+              description: `${pack.credits} AI market analyses added to your account instantly`,
+            },
+          },
+          quantity: 1,
+        },
+      ],
+      success_url: `${baseUrl}/store?success=true&pack=${packId}`,
+      cancel_url: `${baseUrl}/store?canceled=true`,
+      metadata: { userId, packId, credits: String(pack.credits) },
     });
 
     return NextResponse.json({ url: checkoutSession.url });
   } catch (err) {
-    console.error("Stripe checkout error:", err);
-    return NextResponse.json({ error: "Failed to create checkout session" }, { status: 500 });
+    console.error("Pack checkout error:", err);
+    return NextResponse.json({ error: "Failed to start checkout" }, { status: 500 });
   }
 }

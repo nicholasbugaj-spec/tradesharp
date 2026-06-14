@@ -8,7 +8,17 @@ export type MarketType =
   | "financial"
   | "generic";
 
-export type Plan = "free" | "basic" | "elite";
+export type Plan = "free" | "basic" | "pro";
+
+export interface AnalysisPack {
+  id: string;
+  name: string;
+  credits: number;
+  price: number;       // in dollars
+  priceLabel: string;
+  stripePriceId?: string;
+  highlight?: boolean;
+}
 
 export interface PriceTarget {
   action: "BUY" | "SELL" | "HOLD";
@@ -60,6 +70,7 @@ export interface PlanDefinition {
   priceLabel: string;
   description: string;
   uploadsPerDay: number | null;
+  uploadsPerMonth?: number;
   features: PlanFeature[];
   stripePriceId?: string;
 }

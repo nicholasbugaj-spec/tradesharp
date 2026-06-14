@@ -143,7 +143,7 @@ export default function AccountPage() {
               </div>
               <Badge
                 variant={
-                  plan === "elite"
+                  plan === "pro"
                     ? "accent"
                     : plan === "basic"
                     ? "primary"
@@ -151,7 +151,7 @@ export default function AccountPage() {
                 }
                 className="text-sm px-3 py-1"
               >
-                {plan === "elite" && <Zap className="h-3 w-3 mr-1" />}
+                {plan === "pro" && <Zap className="h-3 w-3 mr-1" />}
                 {planDef.name}
               </Badge>
             </div>
@@ -195,7 +195,7 @@ export default function AccountPage() {
         </Card>
 
         {/* Upgrade options */}
-        {plan !== "elite" && (
+        {plan !== "pro" && (
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center gap-2 mb-4">
@@ -206,7 +206,7 @@ export default function AccountPage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {(["basic", "elite"] as Plan[])
+                {(["basic", "pro"] as Plan[])
                   .filter((p) => p !== plan)
                   .map((targetPlan) => {
                     const tp = PLANS[targetPlan];

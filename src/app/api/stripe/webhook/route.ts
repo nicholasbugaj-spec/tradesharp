@@ -28,16 +28,40 @@ export async function POST(req: NextRequest) {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.userId;
         const plan = session.metadata?.plan;
-        if (!userId || !plan) break;
+        const packId = session.metadata?.packId;
+        const credits = session.metadata?.credits;
 
-        await prisma.user.update({
-          where: { id: userId },
-          data: {
-            plan,
-            stripeSubscriptionId: session.subscription as string,
-            stripeSubscriptionStatus: "active",
-          },
-        });
+        if (!userId) break;
+
+        if (packId && credits) {
+          // One-time pack purchase
+          const creditCount = parseInt(credits, 10);
+          await prisma.$transaction([
+            prisma.packPurchase.create({
+              data: {
+                userId,
+                packId,
+                credits: creditCount,
+                amountPaid: session.amount_total ?? 0,
+                stripeSessionId: session.id,
+              },
+            }),
+            prisma.user.update({
+              where: { id: userId },
+              data: { bonusCredits: { increment: creditCount } },
+            }),
+          ]);
+        } else if (plan) {
+          // Subscription upgrade
+          await prisma.user.update({
+            where: { id: userId },
+            data: {
+              plan,
+              stripeSubscriptionId: session.subscription as string,
+              stripeSubscriptionStatus: "active",
+            },
+          });
+        }
         break;
       }
 
@@ -68,7 +92,7 @@ export async function POST(req: NextRequest) {
         await prisma.user.update({
           where: { id: userId },
           data: {
-            plan: "basic",
+            plan: "free",
             stripeSubscriptionStatus: "canceled",
             stripeSubscriptionId: null,
           },

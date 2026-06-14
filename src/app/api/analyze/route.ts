@@ -4,21 +4,17 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { analyzeMarketImage } from "@/lib/ai/analyzer";
 import { mockAnalyzeMarketImage } from "@/lib/ai/mock-analyzer";
-import { canUpload, useRealAI } from "@/lib/plans";
+import { canUpload, getPlan, useRealAI } from "@/lib/plans";
 import { Plan } from "@/types";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+const MAX_SIZE_BYTES = 10 * 1024 * 1024;
 
 export async function POST(req: NextRequest) {
   try {
-    // Auth check
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json(
-        { error: "Authentication required." },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Authentication required." }, { status: 401 });
     }
 
     const userId = (session.user as { id?: string }).id;
@@ -26,106 +22,106 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid session." }, { status: 401 });
     }
 
-    // Get user with plan
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
 
     const plan = user.plan as Plan;
+    const planDef = getPlan(plan);
+    const bonusCredits = user.bonusCredits ?? 0;
 
-    // Check daily upload limit
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
+    // Count usage for the current period
+    let usageCount: number;
+    if (plan === "free") {
+      // Free: daily limit
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      usageCount = await prisma.analysis.count({
+        where: { userId, createdAt: { gte: startOfDay }, usedCredit: false },
+      });
+    } else {
+      // Paid: monthly limit
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      usageCount = await prisma.analysis.count({
+        where: { userId, createdAt: { gte: startOfMonth }, usedCredit: false },
+      });
+    }
 
-    const uploadsToday = await prisma.analysis.count({
-      where: {
-        userId,
-        createdAt: { gte: startOfDay },
-      },
-    });
+    const withinPlanLimit = plan === "free"
+      ? usageCount < 3
+      : usageCount < (planDef.uploadsPerMonth ?? 0);
 
-    if (!canUpload(plan, uploadsToday)) {
-      const planLimits: Record<Plan, number> = {
-        free: 3,
-        basic: 5,
-        elite: 15,
-      };
+    const useCredit = !withinPlanLimit && bonusCredits > 0;
+
+    if (!withinPlanLimit && !useCredit) {
+      const limit = plan === "free" ? "3 per day" : `${planDef.uploadsPerMonth} per month`;
       return NextResponse.json(
         {
-          error: `Daily analysis limit reached. Your ${plan} plan allows ${planLimits[plan]} analyses per day. Upgrade for more.`,
+          error: `Analysis limit reached. Your ${planDef.name} plan includes ${limit}. Buy an Analysis Pack or upgrade for more.`,
           code: "LIMIT_REACHED",
         },
         { status: 429 }
       );
     }
 
-    // Parse form data
+    // Parse and validate file
     const formData = await req.formData();
     const imageFile = formData.get("image") as File | null;
 
     if (!imageFile) {
-      return NextResponse.json(
-        { error: "No image file provided." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "No image file provided." }, { status: 400 });
     }
-
-    // Validate file type
     if (!ALLOWED_TYPES.includes(imageFile.type)) {
-      return NextResponse.json(
-        { error: "Invalid file type. Please upload a JPG, PNG, or WebP image." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid file type. Please upload a JPG, PNG, or WebP image." }, { status: 400 });
     }
-
-    // Validate file size
     if (imageFile.size > MAX_SIZE_BYTES) {
-      return NextResponse.json(
-        { error: "File too large. Maximum size is 10MB." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "File too large. Maximum size is 10MB." }, { status: 400 });
     }
 
-    // Convert to buffer
     const arrayBuffer = await imageFile.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Free plan gets mock results — no API cost
+    // Free plan = mock, paid = real AI
     const analysisResult = useRealAI(plan)
       ? await analyzeMarketImage(buffer, imageFile.type)
       : await mockAnalyzeMarketImage();
 
-    // Save to database
-    const saved = await prisma.analysis.create({
-      data: {
-        userId,
-        imageUrl: `upload_${Date.now()}_${imageFile.name}`, // In production, store in S3/Cloudflare
-        recommendation: analysisResult.recommendation,
-        confidence: analysisResult.confidence,
-        reasoning: analysisResult.reasoning,
-        marketType: analysisResult.marketType,
-        signals: JSON.stringify(analysisResult.signals),
-      },
-    });
+    // Save analysis + deduct credit if needed in a transaction
+    const [saved] = await prisma.$transaction([
+      prisma.analysis.create({
+        data: {
+          userId,
+          imageUrl: `upload_${Date.now()}_${imageFile.name}`,
+          recommendation: analysisResult.recommendation,
+          confidence: analysisResult.confidence,
+          reasoning: analysisResult.reasoning,
+          marketType: analysisResult.marketType,
+          signals: JSON.stringify(analysisResult.signals),
+          usedCredit: useCredit,
+        },
+      }),
+      ...(useCredit
+        ? [prisma.user.update({ where: { id: userId }, data: { bonusCredits: { decrement: 1 } } })]
+        : []),
+    ]);
 
-    // Return result (strip confidence for free users)
-    const response = {
+    return NextResponse.json({
       id: saved.id,
       recommendation: saved.recommendation,
-      confidence: analysisResult.confidence, // Always send, client handles display
+      confidence: analysisResult.confidence,
       reasoning: saved.reasoning,
       marketType: saved.marketType,
       signals: analysisResult.signals,
       createdAt: saved.createdAt.toISOString(),
-    };
+      usedCredit: useCredit,
+      creditsRemaining: useCredit ? bonusCredits - 1 : bonusCredits,
+    }, { status: 200 });
 
-    return NextResponse.json(response, { status: 200 });
   } catch (err) {
     console.error("Analysis error:", err);
-    return NextResponse.json(
-      { error: "Analysis failed. Please try again." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Analysis failed. Please try again." }, { status: 500 });
   }
 }

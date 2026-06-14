@@ -12,6 +12,7 @@ import {
   LogOut,
   Menu,
   X,
+  ShoppingCart,
   ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -23,11 +24,13 @@ export function Navbar() {
 
   const navLinks = [
     { href: "/pricing", label: "Pricing" },
+    { href: "/store", label: "Store" },
     { href: "/disclaimer", label: "Disclaimer" },
   ];
 
   const authLinks = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/store", label: "Store", icon: ShoppingCart },
     { href: "/history", label: "History", icon: History },
     { href: "/account", label: "Account", icon: User },
   ];

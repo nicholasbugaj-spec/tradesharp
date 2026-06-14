@@ -19,7 +19,7 @@ export function PricingCards({ currentPlan }: PricingCardsProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
-  const planOrder: Plan[] = ["free", "basic", "elite"];
+  const planOrder: Plan[] = ["free", "basic", "pro"];
 
   async function handleSubscribe(planId: Plan) {
     if (!session) {

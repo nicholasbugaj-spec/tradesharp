@@ -73,7 +73,7 @@ export default function DashboardPage() {
           <div>
             <h1 className="text-2xl font-bold text-text-primary">Dashboard</h1>
             <p className="text-sm text-text-secondary">
-              {plan === "elite" ? (
+              {plan === "pro" ? (
                 <span className="flex items-center gap-1">
                   <Zap className="h-3.5 w-3.5 text-accent" />
                   Elite Plan — Unlimited analyses

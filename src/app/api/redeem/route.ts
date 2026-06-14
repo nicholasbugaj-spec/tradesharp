@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       }),
     ]);
 
-    const planName = discount.plan === "elite" ? "Elite" : "Basic";
+    const planName = discount.plan === "pro" ? "Elite" : "Basic";
     return NextResponse.json({
       success: true,
       plan: discount.plan,
