@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PLANS } from "@/lib/plans";
-import { Check, X, Zap } from "lucide-react";
+import { Check, X, Zap, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Plan } from "@/types";
 
@@ -13,7 +16,36 @@ interface PricingCardsProps {
 }
 
 export function PricingCards({ currentPlan }: PricingCardsProps) {
+  const { data: session } = useSession();
+  const router = useRouter();
+  const [loading, setLoading] = useState<string | null>(null);
   const planOrder: Plan[] = ["basic", "elite"];
+
+  async function handleSubscribe(planId: Plan) {
+    if (!session) {
+      router.push("/auth/register");
+      return;
+    }
+
+    setLoading(planId);
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: planId }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error ?? "Something went wrong");
+      }
+    } catch {
+      alert("Failed to start checkout. Please try again.");
+    } finally {
+      setLoading(null);
+    }
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
@@ -21,6 +53,7 @@ export function PricingCards({ currentPlan }: PricingCardsProps) {
         const plan = PLANS[planId];
         const isPro = planId === "elite";
         const isCurrent = currentPlan === planId;
+        const isLoading = loading === planId;
 
         return (
           <div
@@ -51,19 +84,13 @@ export function PricingCards({ currentPlan }: PricingCardsProps) {
 
             {/* Header */}
             <div className="mb-6">
-              <h3 className="text-xl font-bold text-text-primary mb-1">
-                {plan.name}
-              </h3>
-              <p className="text-sm text-text-secondary mb-4">
-                {plan.description}
-              </p>
+              <h3 className="text-xl font-bold text-text-primary mb-1">{plan.name}</h3>
+              <p className="text-sm text-text-secondary mb-4">{plan.description}</p>
               <div className="flex items-baseline gap-1">
                 <span className="text-4xl font-black text-text-primary">
                   {plan.priceLabel.replace("/mo", "")}
                 </span>
-                {plan.price > 0 && (
-                  <span className="text-sm text-muted">/month</span>
-                )}
+                <span className="text-sm text-muted">/month</span>
               </div>
             </div>
 
@@ -81,18 +108,9 @@ export function PricingCards({ currentPlan }: PricingCardsProps) {
                         : "bg-surface-2 text-muted"
                     )}
                   >
-                    {feature.included ? (
-                      <Check className="h-3 w-3" />
-                    ) : (
-                      <X className="h-3 w-3" />
-                    )}
+                    {feature.included ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
                   </div>
-                  <span
-                    className={cn(
-                      "text-sm",
-                      feature.included ? "text-text-primary" : "text-muted line-through"
-                    )}
-                  >
+                  <span className={cn("text-sm", feature.included ? "text-text-primary" : "text-muted line-through")}>
                     {feature.text}
                   </span>
                 </li>
@@ -105,14 +123,23 @@ export function PricingCards({ currentPlan }: PricingCardsProps) {
                 Current Plan
               </Button>
             ) : (
-              <Link href={currentPlan ? `/account` : `/auth/register`}>
-                <Button
-                  variant={isPro ? "primary" : "outline"}
-                  className="w-full"
-                >
-                  {currentPlan ? "Upgrade to " + plan.name : "Start " + plan.name}
-                </Button>
-              </Link>
+              <Button
+                variant={isPro ? "primary" : "outline"}
+                className="w-full"
+                onClick={() => handleSubscribe(planId)}
+                disabled={!!loading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Redirecting...
+                  </>
+                ) : currentPlan ? (
+                  `Upgrade to ${plan.name}`
+                ) : (
+                  `Get ${plan.name} — ${plan.priceLabel}`
+                )}
+              </Button>
             )}
           </div>
         );

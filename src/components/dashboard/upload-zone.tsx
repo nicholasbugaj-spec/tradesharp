@@ -199,6 +199,12 @@ export function UploadZone({
                 </span>
               </p>
             </div>
+            <div className="flex flex-wrap justify-center gap-2 text-xs text-muted">
+              <span className="px-2 py-0.5 rounded-full bg-surface-2 border border-border">⚽ Sportsbooks</span>
+              <span className="px-2 py-0.5 rounded-full bg-surface-2 border border-border">🔮 Prediction Markets</span>
+              <span className="px-2 py-0.5 rounded-full bg-surface-2 border border-border">₿ Crypto Charts</span>
+              <span className="px-2 py-0.5 rounded-full bg-surface-2 border border-border">📈 Stock Charts</span>
+            </div>
             <p className="text-xs text-muted">
               JPG, PNG, WebP — max 10MB
             </p>

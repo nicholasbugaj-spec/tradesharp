@@ -148,8 +148,15 @@ export function AnalysisResultCard({
             <div className="flex flex-col gap-2 text-right flex-shrink-0">
               <div>
                 <p className="text-xs text-muted">Market Type</p>
-                <Badge variant="primary" className="mt-0.5">
-                  {result.marketType.replace("_", " ")}
+                <Badge variant="primary" className="mt-0.5 capitalize">
+                  {{
+                    sports_betting: "⚽ Sports Betting",
+                    prediction_market: "🔮 Prediction Market",
+                    crypto: "₿ Crypto",
+                    stocks: "📈 Stocks",
+                    financial: "💹 Financial",
+                    generic: "📊 Market",
+                  }[result.marketType] ?? result.marketType.replace("_", " ")}
                 </Badge>
               </div>
               <p className="text-xs text-muted">

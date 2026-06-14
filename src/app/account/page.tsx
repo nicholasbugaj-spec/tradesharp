@@ -45,12 +45,40 @@ export default function AccountPage() {
 
   const handleUpgrade = async (targetPlan: Plan) => {
     setUpgrading(targetPlan);
-    // Mock Stripe redirect — in production, this would call /api/stripe/checkout
-    await new Promise((r) => setTimeout(r, 1500));
-    alert(
-      `Stripe integration required. In production, this would redirect to a Stripe checkout for the ${PLANS[targetPlan].name} plan at ${PLANS[targetPlan].priceLabel}.`
-    );
-    setUpgrading(null);
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: targetPlan }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error ?? "Something went wrong");
+      }
+    } catch {
+      alert("Failed to start checkout. Please try again.");
+    } finally {
+      setUpgrading(null);
+    }
+  };
+
+  const handleManageBilling = async () => {
+    setUpgrading("manage" as Plan);
+    try {
+      const res = await fetch("/api/stripe/portal", { method: "POST" });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error ?? "No active subscription found");
+      }
+    } catch {
+      alert("Failed to open billing portal.");
+    } finally {
+      setUpgrading(null);
+    }
   };
 
   return (
@@ -138,12 +166,14 @@ export default function AccountPage() {
                     : `${planDef.uploadsPerDay} analyses per day`}
                 </p>
               </div>
-              {plan !== "basic" && (
-                <div className="text-right">
-                  <p className="text-xs text-muted">Renews</p>
-                  <p className="text-sm text-text-primary">Monthly</p>
-                </div>
-              )}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleManageBilling}
+                loading={upgrading === ("manage" as Plan)}
+              >
+                Manage Billing
+              </Button>
             </div>
 
             {/* Plan features */}

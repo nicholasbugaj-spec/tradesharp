@@ -3,6 +3,8 @@ export type Recommendation = "BUY" | "SELL" | "HOLD" | "NO_BET";
 export type MarketType =
   | "sports_betting"
   | "prediction_market"
+  | "crypto"
+  | "stocks"
   | "financial"
   | "generic";
 
