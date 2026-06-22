@@ -2,13 +2,14 @@
 
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { Upload, ImageIcon, X, AlertCircle } from "lucide-react";
+import { Upload, ImageIcon, X, AlertCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AnalysisResult } from "@/types";
 
 interface UploadZoneProps {
   onResult: (result: AnalysisResult) => void;
+  onLimitReached?: () => void;
   uploadsUsed: number;
   uploadsLimit: number | null;
   plan: string;
@@ -16,6 +17,7 @@ interface UploadZoneProps {
 
 export function UploadZone({
   onResult,
+  onLimitReached,
   uploadsUsed,
   uploadsLimit,
   plan,
@@ -24,6 +26,7 @@ export function UploadZone({
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [ticker, setTicker] = useState("");
 
   const isLimitReached =
     uploadsLimit !== null && uploadsUsed >= uploadsLimit;
@@ -77,6 +80,7 @@ export function UploadZone({
     try {
       const formData = new FormData();
       formData.append("image", file);
+      if (ticker.trim()) formData.append("ticker", ticker.trim().toUpperCase());
 
       const res = await fetch("/api/analyze", {
         method: "POST",
@@ -86,6 +90,10 @@ export function UploadZone({
       const data = await res.json();
 
       if (!res.ok) {
+        if (data.code === "LIMIT_REACHED") {
+          onLimitReached?.();
+          return;
+        }
         setError(data.error ?? "Analysis failed. Please try again.");
         return;
       }
@@ -142,23 +150,41 @@ export function UploadZone({
 
       {/* Limit reached warning */}
       {isLimitReached && (
-        <div className="flex items-start gap-3 p-4 rounded-xl bg-danger/10 border border-danger/20">
+        <button
+          onClick={() => onLimitReached?.()}
+          className="w-full flex items-start gap-3 p-4 rounded-xl bg-danger/10 border border-danger/20 hover:border-danger/40 hover:bg-danger/15 transition-all text-left"
+        >
           <AlertCircle className="h-4 w-4 text-danger flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm text-danger font-medium">Daily limit reached</p>
             <p className="text-xs text-text-secondary mt-0.5">
-              Upgrade to Pro for 50 analyses/day or Elite for unlimited.
+              Click to buy more scans or upgrade your plan.
             </p>
-            <a href="/pricing" className="text-xs text-primary hover:underline mt-1 block">
-              View upgrade options →
-            </a>
           </div>
-        </div>
+          <ArrowRight className="h-4 w-4 text-danger ml-auto flex-shrink-0 mt-0.5" />
+        </button>
       )}
+
+      {/* Ticker / token / team input */}
+      <div id="onboarding-ticker">
+        <label className="block text-sm font-medium text-text-secondary mb-1.5">
+          Ticker, token, or team <span className="text-muted font-normal">(optional but improves accuracy)</span>
+        </label>
+        <input
+          type="text"
+          value={ticker}
+          onChange={(e) => setTicker(e.target.value)}
+          placeholder="e.g. NVDA, BTC, Chiefs vs Bills, BTC/USD..."
+          maxLength={60}
+          disabled={loading}
+          className="w-full"
+        />
+      </div>
 
       {/* Drop zone */}
       {!file ? (
         <div
+          id="onboarding-dropzone"
           {...getRootProps()}
           className={cn(
             "relative border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-200",
@@ -246,6 +272,7 @@ export function UploadZone({
               </div>
             </div>
             <Button
+              id="onboarding-analyze"
               onClick={handleAnalyze}
               loading={loading}
               disabled={loading}

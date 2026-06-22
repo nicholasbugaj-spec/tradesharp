@@ -64,9 +64,9 @@ export default function HistoryPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-8 animate-slide-up">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20 animate-float">
             <History className="h-5 w-5 text-white" />
           </div>
           <div>
@@ -98,6 +98,9 @@ export default function HistoryPage() {
         <HistoryTable
           analyses={analyses}
           showConfidence={showConfidenceScore(plan)}
+          onStarToggle={(id, starred) =>
+            setAnalyses((prev) => prev.map((a) => a.id === id ? { ...a, starred } : a))
+          }
         />
       )}
     </div>

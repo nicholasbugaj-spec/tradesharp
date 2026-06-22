@@ -10,16 +10,20 @@ datasource db {
 model User {
   id                       String     @id @default(cuid())
   email                    String     @unique
-  password                 String
+  password                 String?
   name                     String?
+  displayName              String?    // public leaderboard name
+  showOnLeaderboard        Boolean    @default(true)
   plan                     String     @default("free")
-  bonusCredits             Int        @default(0)  // purchased analysis packs
+  bonusCredits             Int        @default(0)
   stripeCustomerId         String?
   stripeSubscriptionId     String?
   stripeSubscriptionStatus String?
+  emailDigest              Boolean    @default(true)
   createdAt                DateTime   @default(now())
   analyses                 Analysis[]
   packPurchases            PackPurchase[]
+  priceAlerts              PriceAlert[]
 }
 
 model DiscountCode {
@@ -52,6 +56,29 @@ model PackPurchase {
   createdAt   DateTime @default(now())
 }
 
+
+model PriceAlert {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  ticker      String
+  condition   String
+  targetPrice Float
+  triggered   Boolean   @default(false)
+  triggeredAt DateTime?
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+}
+
+model ChatMessage {
+  id         String   @id @default(cuid())
+  userId     String
+  analysisId String
+  role       String   // "user" | "assistant"
+  content    String
+  createdAt  DateTime @default(now())
+}
+
 model Analysis {
   id             String   @id @default(cuid())
   userId         String
@@ -62,6 +89,13 @@ model Analysis {
   reasoning      String
   marketType     String
   signals        String
-  usedCredit     Boolean  @default(false)  // true if came from a purchased pack
+  usedCredit     Boolean  @default(false)
+  starred        Boolean  @default(false)
+  // Accuracy tracking
+  tickerSymbol   String?  // e.g. "BTC", "NVDA" — set at scan time if provided
+  priceAtScan    Float?   // price when scan was created
+  price24hLater  Float?   // price fetched ~24h after scan
+  autoCorrect    Boolean? // null = pending, true = correct, false = incorrect
+  verifiedAt     DateTime?
   createdAt      DateTime @default(now())
 }

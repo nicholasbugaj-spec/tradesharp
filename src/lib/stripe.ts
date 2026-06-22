@@ -15,7 +15,7 @@ export function getStripe(): Stripe {
 // Map plan IDs to Stripe Price IDs
 export const STRIPE_PRICE_IDS: Record<string, string> = {
   basic: process.env.STRIPE_PRICE_BASIC ?? "",
-  elite: process.env.STRIPE_PRICE_ELITE ?? "",
+  pro: process.env.STRIPE_PRICE_ELITE ?? "",
 };
 
 export function getPlanFromPriceId(priceId: string): string {

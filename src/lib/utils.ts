@@ -31,8 +31,6 @@ export function getRecommendationColor(rec: string): string {
       return "text-danger";
     case "HOLD":
       return "text-warning";
-    case "NO_BET":
-      return "text-muted";
     default:
       return "text-text-secondary";
   }
@@ -46,8 +44,6 @@ export function getRecommendationBg(rec: string): string {
       return "bg-danger/10 text-danger border-danger/20";
     case "HOLD":
       return "bg-warning/10 text-warning border-warning/20";
-    case "NO_BET":
-      return "bg-muted/10 text-muted border-muted/20";
     default:
       return "bg-surface text-text-secondary border-border";
   }

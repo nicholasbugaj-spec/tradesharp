@@ -3,6 +3,7 @@ import "./globals.css";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { Providers } from "./providers";
+import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 
 export const metadata: Metadata = {
   title: "TradeSharp — AI-Powered Trading Indicators",
@@ -25,6 +26,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className="min-h-screen bg-background text-text-primary flex flex-col">
+        <GoogleAnalytics />
         <Providers>
           <Navbar />
           <main className="flex-1">{children}</main>

@@ -1,4 +1,4 @@
-export type Recommendation = "BUY" | "SELL" | "HOLD" | "NO_BET";
+export type Recommendation = "BUY" | "SELL" | "HOLD";
 
 export type MarketType =
   | "sports_betting"
@@ -41,6 +41,43 @@ export interface AnalysisSignals {
   keyFactors?: string[];
   undervaluedMarkets?: string[];
   priceTargets?: PriceTarget[];
+  liquidity?: string;
+  volumeSwings?: string;
+  newsImpact?: string[];
+  // New enhanced fields
+  quickTake?: string;
+  bullPercent?: number;
+  bearPercent?: number;
+  rsi?: number;
+  macd?: string;
+  bollingerBand?: string;
+  trendStrength?: number;
+  riskReward?: string;
+  sharpMoney?: string;
+  kellySize?: string;
+  technicalRating?: string;
+  momentumScore?: number;
+  volatility?: string;
+  supportLevel?: string;
+  resistanceLevel?: string;
+  signals3?: string[];
+  // Stocks/Crypto specific
+  movingAvg50?: string;
+  movingAvg200?: string;
+  maCrossSignal?: string;
+  candlePattern?: string;
+  sectorSentiment?: string;
+  fearGreedIndex?: number;
+  fearGreedLabel?: string;
+  fundingRate?: string;
+  openInterestChange?: string;
+  dominance?: string;
+  earningsDate?: string;
+  optionsFlow?: string;
+  target24h?: string;
+  target7d?: string;
+  target30d?: string;
+  signalConsensus?: Array<{ name: string; value: string; signal: "bull" | "bear" | "neutral" }>;
 }
 
 export interface AnalysisResult {
@@ -50,6 +87,8 @@ export interface AnalysisResult {
   reasoning: string;
   marketType: MarketType;
   signals: AnalysisSignals;
+  imageUrl?: string | null;
+  starred?: boolean;
   createdAt: string;
 }
 

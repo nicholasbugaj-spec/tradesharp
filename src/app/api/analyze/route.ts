@@ -6,6 +6,8 @@ import { analyzeMarketImage } from "@/lib/ai/analyzer";
 import { mockAnalyzeMarketImage } from "@/lib/ai/mock-analyzer";
 import { canUpload, getPlan, useRealAI } from "@/lib/plans";
 import { Plan } from "@/types";
+import fs from "fs";
+import path from "path";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_SIZE_BYTES = 10 * 1024 * 1024;
@@ -50,14 +52,15 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    const freeDailyLimit = planDef.uploadsPerDay ?? 10;
     const withinPlanLimit = plan === "free"
-      ? usageCount < 3
+      ? usageCount < freeDailyLimit
       : usageCount < (planDef.uploadsPerMonth ?? 0);
 
     const useCredit = !withinPlanLimit && bonusCredits > 0;
 
     if (!withinPlanLimit && !useCredit) {
-      const limit = plan === "free" ? "3 per day" : `${planDef.uploadsPerMonth} per month`;
+      const limit = plan === "free" ? `${freeDailyLimit} per day` : `${planDef.uploadsPerMonth} per month`;
       return NextResponse.json(
         {
           error: `Analysis limit reached. Your ${planDef.name} plan includes ${limit}. Buy an Analysis Pack or upgrade for more.`,
@@ -70,6 +73,7 @@ export async function POST(req: NextRequest) {
     // Parse and validate file
     const formData = await req.formData();
     const imageFile = formData.get("image") as File | null;
+    const ticker = (formData.get("ticker") as string | null)?.trim().toUpperCase() ?? "";
 
     if (!imageFile) {
       return NextResponse.json({ error: "No image file provided." }, { status: 400 });
@@ -84,17 +88,25 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await imageFile.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
+    // Save image to public/uploads/
+    const ext = imageFile.type === "image/png" ? "png" : imageFile.type === "image/webp" ? "webp" : "jpg";
+    const filename = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const uploadsDir = path.join(process.cwd(), "public", "uploads");
+    if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+    fs.writeFileSync(path.join(uploadsDir, filename), buffer);
+    const imageUrl = `/uploads/${filename}`;
+
     // Free plan = mock, paid = real AI
     const analysisResult = useRealAI(plan)
-      ? await analyzeMarketImage(buffer, imageFile.type)
-      : await mockAnalyzeMarketImage();
+      ? await analyzeMarketImage(buffer, imageFile.type, ticker)
+      : await mockAnalyzeMarketImage(ticker);
 
     // Save analysis + deduct credit if needed in a transaction
     const [saved] = await prisma.$transaction([
       prisma.analysis.create({
         data: {
           userId,
-          imageUrl: `upload_${Date.now()}_${imageFile.name}`,
+          imageUrl,
           recommendation: analysisResult.recommendation,
           confidence: analysisResult.confidence,
           reasoning: analysisResult.reasoning,

@@ -8,12 +8,15 @@ import { AnalysisResultCard } from "@/components/dashboard/analysis-result";
 import { AnalysisResult, Plan } from "@/types";
 import { getPlan, showConfidenceScore, showDetailedReasoning, showSignalBreakdown } from "@/lib/plans";
 import { TrendingUp, Zap } from "lucide-react";
+import { OnboardingTour } from "@/components/onboarding/onboarding-tour";
+import { UpsellModal } from "@/components/dashboard/upsell-modal";
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [uploadsUsed, setUploadsUsed] = useState(0);
+  const [showUpsell, setShowUpsell] = useState(false);
 
   const plan = ((session?.user as { plan?: string })?.plan ?? "free") as Plan;
   const planDef = getPlan(plan);
@@ -64,10 +67,12 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <OnboardingTour plan={plan} />
+      {showUpsell && <UpsellModal plan={plan} onClose={() => setShowUpsell(false)} />}
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-8 animate-slide-up">
         <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20 animate-float">
             <TrendingUp className="h-5 w-5 text-white" />
           </div>
           <div>
@@ -100,7 +105,7 @@ export default function DashboardPage() {
       )}
 
       {/* Upload zone */}
-      <div className="bg-surface border border-border rounded-2xl p-6 mb-8">
+      <div className="bg-surface border border-border rounded-2xl p-6 mb-8 glow-card scan-line animate-fade-in">
         <h2 className="text-base font-semibold text-text-primary mb-1">
           Upload Market Screenshot
         </h2>
@@ -109,6 +114,7 @@ export default function DashboardPage() {
         </p>
         <UploadZone
           onResult={handleResult}
+          onLimitReached={() => setShowUpsell(true)}
           uploadsUsed={uploadsUsed}
           uploadsLimit={planDef.uploadsPerDay}
           plan={plan}
@@ -117,7 +123,7 @@ export default function DashboardPage() {
 
       {/* Result */}
       {result && (
-        <div id="result">
+        <div id="result" className="animate-slide-up">
           <h2 className="text-base font-semibold text-text-primary mb-4">
             Analysis Result
           </h2>
@@ -126,6 +132,7 @@ export default function DashboardPage() {
             showConfidence={showConfidenceScore(plan)}
             showReasoning={showDetailedReasoning(plan)}
             showSignals={showSignalBreakdown(plan)}
+            isPro={plan === "pro"}
           />
         </div>
       )}

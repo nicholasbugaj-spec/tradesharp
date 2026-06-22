@@ -27,7 +27,7 @@ export const authOptions: NextAuthOptions = {
           where: { email: credentials.email.toLowerCase() },
         });
 
-        if (!user) {
+        if (!user || !user.password) {
           return null;
         }
 

@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
         if (packId && credits) {
           // One-time pack purchase
           const creditCount = parseInt(credits, 10);
+          if (isNaN(creditCount) || creditCount <= 0) break;
           await prisma.$transaction([
             prisma.packPurchase.create({
               data: {
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest) {
             where: { id: userId },
             data: {
               plan,
-              stripeSubscriptionId: session.subscription as string,
+              stripeSubscriptionId: session.subscription ? (session.subscription as string) : null,
               stripeSubscriptionStatus: "active",
             },
           });
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest) {
         const userId = sub.metadata?.userId;
         if (!userId) break;
 
-        const priceId = sub.items.data[0]?.price.id;
+        const priceId = sub.items?.data?.[0]?.price?.id;
         const plan = priceId ? getPlanFromPriceId(priceId) : "basic";
 
         await prisma.user.update({

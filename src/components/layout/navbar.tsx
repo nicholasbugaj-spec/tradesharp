@@ -14,6 +14,7 @@ import {
   X,
   ShoppingCart,
   ChevronDown,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,14 +25,14 @@ export function Navbar() {
 
   const navLinks = [
     { href: "/pricing", label: "Pricing" },
-    { href: "/store", label: "Store" },
+    { href: "/store", label: "Store", icon: ShoppingCart },
     { href: "/disclaimer", label: "Disclaimer" },
   ];
 
   const authLinks = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/store", label: "Store", icon: ShoppingCart },
     { href: "/history", label: "History", icon: History },
+    { href: "/alerts", label: "Alerts", icon: Bell },
     { href: "/account", label: "Account", icon: User },
   ];
 
@@ -40,13 +41,16 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
+          <Link href="/" className="flex items-center gap-2.5 group">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
               <TrendingUp className="h-4 w-4 text-white" />
             </div>
-            <span className="font-bold text-text-primary text-lg hidden sm:block">
-              Trade<span className="text-primary">Sharp</span>
-            </span>
+            <div className="hidden sm:block">
+              <span className="font-bold text-text-primary text-lg">
+                Trade<span className="text-primary">Sharp</span>
+              </span>
+              <p className="text-[10px] text-muted leading-none -mt-0.5 italic">Premium advice without the premium price.</p>
+            </div>
           </Link>
 
           {/* Desktop Nav */}
@@ -55,8 +59,9 @@ export function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="px-3 py-2 text-sm text-text-secondary hover:text-text-primary rounded-lg hover:bg-surface-2 transition-all"
+                className="px-3 py-2 text-sm text-text-secondary hover:text-text-primary rounded-lg hover:bg-surface-2 transition-all flex items-center gap-1.5 animated-underline"
               >
+                {"icon" in link && link.icon && <link.icon className="h-4 w-4" />}
                 {link.label}
               </Link>
             ))}
@@ -65,7 +70,7 @@ export function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="px-3 py-2 text-sm text-text-secondary hover:text-text-primary rounded-lg hover:bg-surface-2 transition-all flex items-center gap-1.5"
+                  className="px-3 py-2 text-sm text-text-secondary hover:text-text-primary rounded-lg hover:bg-surface-2 transition-all flex items-center gap-1.5 animated-underline"
                 >
                   <link.icon className="h-4 w-4" />
                   {link.label}
@@ -154,9 +159,10 @@ export function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="block px-3 py-2 text-sm text-text-secondary hover:text-text-primary rounded-lg hover:bg-surface-2"
+                className="flex items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:text-text-primary rounded-lg hover:bg-surface-2"
                 onClick={() => setMobileOpen(false)}
               >
+                {"icon" in link && link.icon && <link.icon className="h-4 w-4" />}
                 {link.label}
               </Link>
             ))}

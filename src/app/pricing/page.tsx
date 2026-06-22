@@ -16,7 +16,7 @@ export default async function PricingPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
       {/* Header */}
-      <div className="text-center mb-16">
+      <div className="text-center mb-16 animate-slide-up">
         <p className="text-sm font-medium text-primary uppercase tracking-wider mb-3">
           Pricing
         </p>
@@ -58,7 +58,7 @@ export default async function PricingPage() {
           ].map((item) => (
             <div
               key={item.q}
-              className="p-6 rounded-xl bg-surface border border-border"
+              className="p-6 rounded-xl bg-surface border border-border glow-card"
             >
               <h3 className="text-base font-semibold text-text-primary mb-2">
                 {item.q}

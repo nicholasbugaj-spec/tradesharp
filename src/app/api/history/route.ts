@@ -66,6 +66,8 @@ export async function GET(req: NextRequest) {
         reasoning: a.reasoning,
         marketType: a.marketType,
         signals,
+        imageUrl: a.imageUrl ?? null,
+        starred: a.starred ?? false,
         createdAt: a.createdAt.toISOString(),
       };
     });

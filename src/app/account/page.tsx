@@ -66,7 +66,7 @@ export default function AccountPage() {
   };
 
   const handleManageBilling = async () => {
-    setUpgrading("manage" as Plan);
+    setUpgrading("manage");
     try {
       const res = await fetch("/api/stripe/portal", { method: "POST" });
       const data = await res.json();
@@ -171,7 +171,7 @@ export default function AccountPage() {
                 size="sm"
                 variant="outline"
                 onClick={handleManageBilling}
-                loading={upgrading === ("manage" as Plan)}
+                loading={upgrading === "manage"}
               >
                 Manage Billing
               </Button>

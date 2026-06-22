@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getStripe, STRIPE_PRICE_IDS } from "@/lib/stripe";
+import { ANNUAL_PRICES } from "@/lib/plans";
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,16 +13,19 @@ export async function POST(req: NextRequest) {
     }
 
     const userId = (session.user as { id?: string }).id!;
-    const { plan } = await req.json();
+    const { plan, annual } = await req.json();
 
     if (!["basic", "pro"].includes(plan)) {
       return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
     }
 
-    const priceId = STRIPE_PRICE_IDS[plan];
+    const priceId = annual
+      ? ANNUAL_PRICES[plan]?.stripePriceId
+      : STRIPE_PRICE_IDS[plan];
+
     if (!priceId) {
       return NextResponse.json(
-        { error: "Stripe price not configured. Add STRIPE_PRICE_BASIC and STRIPE_PRICE_ELITE to your .env file." },
+        { error: "Stripe price not configured. Check your .env file." },
         { status: 500 }
       );
     }
