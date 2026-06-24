@@ -8,8 +8,6 @@ import { analyzeMarketImage } from "@/lib/ai/analyzer";
 import { mockAnalyzeMarketImage } from "@/lib/ai/mock-analyzer";
 import { canUpload, getPlan, useRealAI } from "@/lib/plans";
 import { Plan } from "@/types";
-import fs from "fs";
-import path from "path";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_SIZE_BYTES = 10 * 1024 * 1024;
@@ -90,13 +88,7 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await imageFile.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Save image to public/uploads/
-    const ext = imageFile.type === "image/png" ? "png" : imageFile.type === "image/webp" ? "webp" : "jpg";
-    const filename = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-    const uploadsDir = path.join(process.cwd(), "public", "uploads");
-    if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-    fs.writeFileSync(path.join(uploadsDir, filename), buffer);
-    const imageUrl = `/uploads/${filename}`;
+    const imageUrl = "";
 
     // Free plan = mock, paid = real AI
     const analysisResult = useRealAI(plan)
