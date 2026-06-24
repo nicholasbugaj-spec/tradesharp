@@ -87,7 +87,7 @@ export default function RegisterPage() {
             Create your account
           </h1>
           <p className="text-text-secondary text-sm mt-1">
-            Start with 3 free analyses per day
+            Start with 10 free analyses per day
           </p>
         </div>
 
@@ -98,7 +98,7 @@ export default function RegisterPage() {
           </p>
           <ul className="space-y-1.5">
             {[
-              "3 analyses per day",
+              "10 analyses per day",
               "BUY/SELL/HOLD/NO BET signals",
               "Market type detection",
             ].map((item) => (
