@@ -7,9 +7,12 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PLANS, ANNUAL_PRICES } from "@/lib/plans";
-import { Check, X, Zap, Loader2 } from "lucide-react";
+import { Check, X, Zap, Loader2, Gift } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Plan } from "@/types";
+
+const PROMO_END = new Date("2026-07-02T23:59:59Z").getTime();
+const isPromoActive = () => Date.now() < PROMO_END;
 
 interface PricingCardsProps {
   currentPlan?: Plan;
@@ -21,6 +24,7 @@ export function PricingCards({ currentPlan }: PricingCardsProps) {
   const [loading, setLoading] = useState<string | null>(null);
   const [annual, setAnnual] = useState(false);
   const planOrder: Plan[] = ["free", "basic", "pro"];
+  const promoActive = isPromoActive();
 
   async function handleSubscribe(planId: Plan) {
     if (!session) {
@@ -32,7 +36,7 @@ export function PricingCards({ currentPlan }: PricingCardsProps) {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: planId, annual }),
+        body: JSON.stringify({ plan: planId, annual, promo: promoActive }),
       });
       const data = await res.json();
       if (data.url) {
@@ -136,6 +140,15 @@ export function PricingCards({ currentPlan }: PricingCardsProps) {
                     (${(annualInfo.price / 12).toFixed(2)}/mo billed annually)
                   </p>
                 )}
+                {promoActive && planId !== "free" && (
+                  <div className="mt-3 flex items-center gap-2 bg-gradient-to-r from-green-500/15 to-emerald-500/10 border border-green-500/30 rounded-xl px-3 py-2">
+                    <Gift className="h-4 w-4 text-green-400 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs font-bold text-green-400">🎉 Limited Time — 1 Month FREE</p>
+                      <p className="text-xs text-muted">Pay first month, next month on us</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Features */}
@@ -175,6 +188,8 @@ export function PricingCards({ currentPlan }: PricingCardsProps) {
                     <><Loader2 className="h-4 w-4 animate-spin mr-2" />Redirecting...</>
                   ) : currentPlan ? (
                     `Upgrade to ${plan.name}`
+                  ) : promoActive ? (
+                    `Get ${plan.name} + 1 Month Free 🎉`
                   ) : (
                     `Get ${plan.name} — ${displayPrice}`
                   )}

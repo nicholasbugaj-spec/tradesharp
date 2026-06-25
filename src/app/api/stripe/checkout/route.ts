@@ -15,7 +15,9 @@ export async function POST(req: NextRequest) {
     }
 
     const userId = (session.user as { id?: string }).id!;
-    const { plan, annual } = await req.json();
+    const { plan, annual, promo } = await req.json();
+    const PROMO_END = new Date("2026-07-02T23:59:59Z").getTime();
+    const promoActive = promo && Date.now() < PROMO_END;
 
     if (!["basic", "pro"].includes(plan)) {
       return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
@@ -64,6 +66,7 @@ export async function POST(req: NextRequest) {
       metadata: { userId, plan },
       subscription_data: {
         metadata: { userId, plan },
+        ...(promoActive ? { trial_period_days: 30 } : {}),
       },
     });
 
