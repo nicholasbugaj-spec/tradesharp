@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
           ]);
         } else if (plan) {
           // Subscription upgrade
-          await prisma.user.update({
+          const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: {
               plan,
@@ -62,6 +62,21 @@ export async function POST(req: NextRequest) {
               stripeSubscriptionStatus: "active",
             },
           });
+
+          // Referral reward — give referrer 1 free month if this user was referred
+          if (updatedUser.referredBy) {
+            const referrer = await prisma.user.findUnique({
+              where: { referralCode: updatedUser.referredBy },
+            });
+            if (referrer?.stripeSubscriptionId) {
+              const sub = await getStripe().subscriptions.retrieve(referrer.stripeSubscriptionId);
+              const currentEnd = (sub as Stripe.Subscription).current_period_end;
+              await getStripe().subscriptions.update(referrer.stripeSubscriptionId, {
+                trial_end: currentEnd + 30 * 24 * 60 * 60,
+                proration_behavior: "none",
+              });
+            }
+          }
         }
         break;
       }

@@ -20,6 +20,8 @@ model User {
   stripeSubscriptionId     String?
   stripeSubscriptionStatus String?
   emailDigest              Boolean    @default(true)
+  referralCode             String?    @unique
+  referredBy               String?    // referral code of the user who referred them
   createdAt                DateTime   @default(now())
   analyses                 Analysis[]
   packPurchases            PackPurchase[]

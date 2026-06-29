@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { email, password, name } = body;
+    const { email, password, name, referredBy } = body;
 
     if (!email || !password) {
       return NextResponse.json(
@@ -45,6 +45,9 @@ export async function POST(req: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
+    // Generate unique referral code
+    const referralCode = Math.random().toString(36).slice(2, 8).toUpperCase();
+
     // Create user
     const user = await prisma.user.create({
       data: {
@@ -52,6 +55,8 @@ export async function POST(req: NextRequest) {
         password: hashedPassword,
         name: name ?? null,
         plan: "free",
+        referralCode,
+        referredBy: referredBy ?? null,
       },
     });
 

@@ -17,6 +17,9 @@ import {
   Check,
   ArrowRight,
   Calendar,
+  Gift,
+  Copy,
+  CheckCheck,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -24,6 +27,24 @@ export default function AccountPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [upgrading, setUpgrading] = useState<string | null>(null);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/referral").then(r => r.json()).then(d => setReferralCode(d.referralCode));
+  }, []);
+
+  const referralLink = referralCode
+    ? `${typeof window !== "undefined" ? window.location.origin : "https://tradesharp-one.vercel.app"}/auth/register?ref=${referralCode}`
+    : null;
+
+  const handleCopy = () => {
+    if (referralLink) {
+      navigator.clipboard.writeText(referralLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -265,6 +286,31 @@ export default function AccountPage() {
             <Button variant="danger" size="sm">
               Delete Account
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Referral card */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-2 mb-2">
+              <Gift className="h-4 w-4 text-primary" />
+              <h2 className="text-base font-semibold text-text-primary">Referral Program</h2>
+            </div>
+            <p className="text-sm text-text-secondary mb-4">
+              Share your link — when a friend signs up and subscribes to any plan, you get <span className="text-primary font-semibold">1 free month</span> added to your subscription automatically.
+            </p>
+            {referralLink ? (
+              <div className="flex items-center gap-2">
+                <div className="flex-1 px-3 py-2 rounded-lg bg-surface-2 border border-border text-xs text-muted font-mono truncate">
+                  {referralLink}
+                </div>
+                <Button size="sm" variant="outline" onClick={handleCopy} className="flex-shrink-0">
+                  {copied ? <><CheckCheck className="h-4 w-4 mr-1 text-green-400" />Copied!</> : <><Copy className="h-4 w-4 mr-1" />Copy</>}
+                </Button>
+              </div>
+            ) : (
+              <div className="h-9 bg-surface-2 rounded-lg animate-pulse" />
+            )}
           </CardContent>
         </Card>
       </div>

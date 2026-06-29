@@ -1,14 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, AlertCircle, Check } from "lucide-react";
+import { Suspense } from "react";
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [referredBy, setReferredBy] = useState<string | null>(null);
+
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+    if (ref) setReferredBy(ref);
+  }, [searchParams]);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -39,7 +47,7 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email: email.toLowerCase(), password }),
+        body: JSON.stringify({ name, email: email.toLowerCase(), password, referredBy }),
       });
 
       const data = await res.json();
@@ -83,6 +91,11 @@ export default function RegisterPage() {
               Trade<span className="text-primary">Sharp</span>
             </span>
           </Link>
+          {referredBy && (
+            <div className="mb-4 px-4 py-2.5 rounded-xl bg-green-500/10 border border-green-500/30 text-sm text-green-400 font-medium">
+              🎉 You were referred by a friend! Your friend gets 1 free month when you subscribe.
+            </div>
+          )}
           <h1 className="text-2xl font-bold text-text-primary">
             Create your account
           </h1>
@@ -254,5 +267,13 @@ export default function RegisterPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterForm />
+    </Suspense>
   );
 }
