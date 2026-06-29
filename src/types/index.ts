@@ -66,6 +66,11 @@ export interface AnalysisSignals {
   movingAvg200?: string;
   maCrossSignal?: string;
   candlePattern?: string;
+  chartPattern?: string;
+  chartPatternSignal?: string;
+  chartPatternTarget?: string;
+  chartPatternInvalidation?: string;
+  patternMaturity?: string;
   sectorSentiment?: string;
   fearGreedIndex?: number;
   fearGreedLabel?: string;

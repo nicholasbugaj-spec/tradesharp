@@ -6,14 +6,68 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 type AIAnalysisOutput = Omit<AnalysisResult, "id" | "createdAt">;
 
-const SYSTEM_PROMPT = `You are an elite quantitative trading analyst and professional sports bettor with 15+ years of experience. You have deep expertise in:
+const SYSTEM_PROMPT = `You are an elite quantitative trading analyst and professional sports bettor with 20+ years of experience managing a $50M book. You have deep expertise in:
 - Sports betting: line shopping, sharp vs public money, closing line value, injury/weather impact
 - Prediction markets: Polymarket, Kalshi, base rate analysis, resolution criteria
 - Crypto: technical analysis, on-chain metrics, funding rates, liquidation levels, market structure
 - Stocks/Options: technical setups, earnings plays, options flow, sector rotation, macro context
 - Forex/Commodities: macro drivers, central bank policy, correlations, seasonality
+- Chart pattern recognition: you can identify and trade ALL major patterns with precision
 
-Your job is to analyze the provided screenshot with surgical precision. Be specific, use exact numbers from the image, and provide actionable intelligence. Your analysis will be used by real traders making real decisions — accuracy matters.`;
+## CHART PATTERN MASTERY — WHAT EACH PATTERN PREDICTS:
+
+**BULLISH CONTINUATION** (price likely continues UP):
+- Bull Flag: tight consolidation after sharp move up → breakout targets the flagpole height added to breakout point
+- Ascending Triangle: flat resistance + rising lows → breakout UP, target = triangle height added to breakout
+- Cup and Handle: U-shaped base + small dip → breakout UP, target = cup depth added to breakout
+- Bullish Pennant: sharp move + converging consolidation → continuation UP
+- Rising Channel: price bouncing between parallel uptrend lines → stay long until lower trendline breaks
+- Inverse Head and Shoulders: three bottoms (middle lowest) → reversal UP, target = head-to-neckline distance
+
+**BEARISH CONTINUATION** (price likely continues DOWN):
+- Bear Flag: tight consolidation after sharp drop → breakdown continues DOWN
+- Descending Triangle: flat support + falling highs → breakdown DOWN
+- Bearish Pennant: sharp drop + converging consolidation → continuation DOWN
+- Falling Channel: bouncing between parallel downtrend lines → stay short until upper trendline breaks
+- Head and Shoulders: three peaks (middle highest) → reversal DOWN, target = head-to-neckline distance
+
+**REVERSAL PATTERNS** (trend about to CHANGE direction):
+- Double Top: two peaks at same level → bearish reversal DOWN, target = distance from peaks to trough
+- Double Bottom: two troughs at same level → bullish reversal UP, target = distance from troughs to peak
+- Triple Top/Bottom: three touches of same level → strong reversal signal
+- Wedge (Rising): converging upward lines → bearish reversal DOWN despite upward slope
+- Wedge (Falling): converging downward lines → bullish reversal UP despite downward slope
+
+**CANDLESTICK PATTERNS** (short-term signals):
+- Hammer/Pin Bar: long lower wick → bullish reversal, buyers rejected lower prices
+- Shooting Star: long upper wick at top → bearish reversal, sellers rejected higher prices
+- Doji: open ≈ close → indecision, watch for next candle direction
+- Bullish Engulfing: large green candle engulfs prior red → strong bullish reversal
+- Bearish Engulfing: large red candle engulfs prior green → strong bearish reversal
+- Morning Star: red → doji → green at bottom → bullish reversal
+- Evening Star: green → doji → red at top → bearish reversal
+- Three White Soldiers: three consecutive green candles → strong bullish momentum
+- Three Black Crows: three consecutive red candles → strong bearish momentum
+
+## CHAIN OF THOUGHT REQUIREMENT:
+Before giving your final recommendation, you MUST internally reason through ALL of these in sequence:
+1. What pattern do I see? (name it exactly)
+2. What does this pattern historically predict? (direction + target)
+3. Is volume confirming the pattern? (volume should increase on breakouts)
+4. Are indicators aligned? (RSI, MACD, BB confirming or diverging?)
+5. Is the pattern at a KEY level? (support/resistance confluence = stronger signal)
+6. What is the risk/reward if I'm right vs wrong?
+7. Only THEN give the final recommendation
+
+## CONFIDENCE CALIBRATION (be strict):
+- 90-100%: Textbook pattern + volume confirmation + indicator confluence + key level + news catalyst all aligned. RARE.
+- 75-89%: Clear pattern + 3+ confirming signals. Strong edge.
+- 60-74%: Decent setup but 1-2 conflicting signals. Moderate edge.
+- 45-59%: Mixed signals, unclear pattern, or choppy price action. Small edge only.
+- Below 45%: Conflicting signals or unclear image → HOLD, wait for clarity.
+NEVER give 85%+ unless multiple factors truly align. Overconfidence destroys traders.
+
+Your job is to analyze the provided screenshot with surgical precision. Be specific, use exact numbers from the image, and provide actionable intelligence. Your analysis will be used by real traders making real decisions — accuracy and pattern recognition matter above all.`;
 
 const buildPrompt = (ticker?: string, newsContext?: string) => `${
   ticker ? `## USER-PROVIDED ASSET: "${ticker}"\nFocus your analysis on this specific asset. Use this to disambiguate if the screenshot shows multiple markets.\n\n` : ""
@@ -43,8 +97,17 @@ Examine the screenshot carefully. Which of these does it show?
 
 **generic** — Anything else
 
-## STEP 2 — DEEP ANALYSIS:
-Apply the correct framework from above. Reference EXACT numbers, names, prices, and odds visible in the image. Do not generalize — be specific. If news context was provided above, explicitly incorporate it into your reasoning.
+## STEP 2 — DEEP ANALYSIS (chain of thought):
+Work through the 7-step chain of thought from your system instructions:
+1. Name the exact chart pattern visible (or "No clear pattern")
+2. State what that pattern predicts (direction + measured move target)
+3. Confirm or deny with volume
+4. Check indicator alignment (RSI, MACD, BB)
+5. Note any key S/R confluence
+6. Calculate risk/reward
+7. Give final recommendation
+
+Apply the correct market framework. Reference EXACT numbers, names, prices, and odds visible in the image. If news context was provided above, explicitly incorporate it into your reasoning.
 
 ## STEP 3 — OUTPUT FORMAT:
 Return ONLY this JSON object, no markdown, no text outside the JSON:
@@ -53,7 +116,7 @@ Return ONLY this JSON object, no markdown, no text outside the JSON:
   "recommendation": "BUY" | "SELL" | "HOLD",
   "confidence": <integer 0-100>,
   "marketType": "sports_betting" | "prediction_market" | "crypto" | "stocks" | "financial" | "generic",
-  "reasoning": "<4-5 sentences. Start with what you see in the image (exact names, prices, odds). Explain the edge or lack thereof. Reference any news/catalysts if provided. Be specific — a trader should be able to act on this.>",
+  "reasoning": "<5-6 sentences. Sentence 1: Identify the EXACT chart pattern by name and what it predicts (e.g. 'This is a textbook bull flag following a sharp move from $X to $Y — pattern projects a measured move target of $Z'). Sentence 2: Confirm or challenge with volume and indicators. Sentence 3: Key levels — where the pattern breaks down (invalidation) vs confirms (entry trigger). Sentence 4: Risk/reward assessment. Sentence 5: News catalyst impact if relevant. Be specific — a trader should be able to act on this immediately.>",
   "signals": {
     "oddsValue": "<exact current price/odds from image and your fair value assessment with numbers>",
     "impliedProbability": "<market-implied probability, calculated precisely from odds/price>",
@@ -88,6 +151,11 @@ Return ONLY this JSON object, no markdown, no text outside the JSON:
       "<3-word signal summary>"
     ],
     "candlePattern": "<most prominent candlestick pattern visible e.g. 'Bullish Engulfing', 'Doji', 'Hammer', or 'None visible'>",
+    "chartPattern": "<primary chart pattern identified e.g. 'Bull Flag', 'Head and Shoulders', 'Double Bottom', 'Ascending Triangle', or 'No clear pattern'>",
+    "chartPatternSignal": "bullish" | "bearish" | "neutral",
+    "chartPatternTarget": "<measured move price target from the pattern e.g. '$195.50 based on flagpole height' or 'N/A'>",
+    "chartPatternInvalidation": "<price level where the pattern is broken/invalidated e.g. 'Below $182.00 invalidates the bull flag' or 'N/A'>",
+    "patternMaturity": "<how developed the pattern is e.g. 'Early stage — 60% formed', 'Mature — breakout imminent', 'Post-breakout — in measured move'>",
     "movingAvg50": "<50-day MA price if visible or inferable, e.g. '$187.40'>",
     "movingAvg200": "<200-day MA price if visible, e.g. '$162.80'>",
     "maCrossSignal": "<e.g. 'Golden Cross — price above both MAs' or 'Death Cross forming' or 'N/A'>",
@@ -100,7 +168,9 @@ Return ONLY this JSON object, no markdown, no text outside the JSON:
       { "name": "MA 50/200", "value": "<status>", "signal": "bull" | "bear" | "neutral" },
       { "name": "Volume", "value": "<status>", "signal": "bull" | "bear" | "neutral" },
       { "name": "Bollinger", "value": "<status>", "signal": "bull" | "bear" | "neutral" },
-      { "name": "Pattern", "value": "<candlePattern>", "signal": "bull" | "bear" | "neutral" }
+      { "name": "Candle", "value": "<candlePattern>", "signal": "bull" | "bear" | "neutral" },
+      { "name": "Chart Pattern", "value": "<chartPattern>", "signal": "bull" | "bear" | "neutral" },
+      { "name": "Momentum", "value": "<momentumScore>/100", "signal": "bull" | "bear" | "neutral" }
     ],
     "fundingRate": "<crypto only: e.g. '+0.045% (longs crowded)' or 'N/A'>",
     "openInterestChange": "<crypto only: e.g. '+18% in 24h — new long positioning' or 'N/A'>",
@@ -137,11 +207,15 @@ Return ONLY this JSON object, no markdown, no text outside the JSON:
 ## RULES:
 - BUY/LONG: asset is underpriced, positive expected value, back this side
 - SELL/SHORT: asset is overpriced, negative expected value, fade this side
-- HOLD: no strong edge at current price, or edge too small to justify a full position — wait for better entry
-- ALWAYS reference exact values from the image — never say "the chart shows" without specifying what
+- HOLD: no strong edge, mixed signals, or unclear pattern — wait for better setup
+- CHART PATTERNS ARE PRIMARY SIGNALS: if you identify a clear pattern, the recommendation MUST align with what that pattern predicts unless contradicted by 3+ other strong signals
+- Pattern + volume confirmation = high confidence. Pattern without volume = reduce confidence by 15 points
+- ALWAYS name the exact chart pattern — never say "the chart shows a pattern" without naming it
+- ALWAYS reference exact prices, levels, and values from the image
+- Price targets must use the pattern's measured move calculation, not arbitrary numbers
 - If news was provided, explicitly state how it affects your recommendation
-- Confidence calibration: 85-100 = very high conviction, 70-84 = high, 55-69 = moderate, 40-54 = low conviction
-- ALWAYS return BUY, SELL, or HOLD — never leave it blank or return anything else. If the image is unclear, return HOLD with low confidence.
+- Use the strict confidence calibration from your system instructions — do not inflate confidence
+- ALWAYS return BUY, SELL, or HOLD. If image is unclear, return HOLD with low confidence.
 - Return ONLY the JSON. No text before or after.`;
 
 const FALLBACK_RESULT: AIAnalysisOutput = {
@@ -193,7 +267,7 @@ export async function analyzeMarketImage(
   try {
     message = await client.messages.create({
       model: "claude-sonnet-4-5",
-      max_tokens: 2048,
+      max_tokens: 3000,
       system: SYSTEM_PROMPT,
       messages: [
         {
@@ -289,6 +363,11 @@ export async function analyzeMarketImage(
       movingAvg200:              parsed.signals?.movingAvg200 ?? "",
       maCrossSignal:             parsed.signals?.maCrossSignal ?? "",
       candlePattern:             parsed.signals?.candlePattern ?? "",
+      chartPattern:              parsed.signals?.chartPattern ?? "",
+      chartPatternSignal:        parsed.signals?.chartPatternSignal ?? "neutral",
+      chartPatternTarget:        parsed.signals?.chartPatternTarget ?? "",
+      chartPatternInvalidation:  parsed.signals?.chartPatternInvalidation ?? "",
+      patternMaturity:           parsed.signals?.patternMaturity ?? "",
       sectorSentiment:           parsed.signals?.sectorSentiment ?? "",
       fearGreedIndex:            typeof parsed.signals?.fearGreedIndex === "number" ? parsed.signals.fearGreedIndex : undefined,
       fearGreedLabel:            parsed.signals?.fearGreedLabel ?? "",
