@@ -69,10 +69,11 @@ export async function POST(req: NextRequest) {
               where: { referralCode: updatedUser.referredBy },
             });
             if (referrer?.stripeSubscriptionId) {
-              const sub = await getStripe().subscriptions.retrieve(referrer.stripeSubscriptionId) as Stripe.Subscription & { current_period_end: number };
+              const sub = await getStripe().subscriptions.retrieve(referrer.stripeSubscriptionId) as unknown as Stripe.Subscription;
               const newTrialEnd = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
+              const currentEnd = (sub as unknown as { current_period_end?: number }).current_period_end ?? 0;
               await getStripe().subscriptions.update(referrer.stripeSubscriptionId, {
-                trial_end: Math.max(sub.current_period_end ?? newTrialEnd, newTrialEnd),
+                trial_end: Math.max(currentEnd, newTrialEnd),
                 proration_behavior: "none",
               });
             }
